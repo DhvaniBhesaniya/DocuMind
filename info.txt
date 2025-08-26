@@ -25,23 +25,37 @@ DATABASE_URL=postgresql://username:password@localhost:5432/ai_dochat
 MAX_FILE_SIZE=10485760
 UPLOAD_DIR=uploads
 
+#Gemini
+# AIzaSyDfwgqvwRczu6LfdhFZAOt1oz3L4Or7LbI
 
 # mongo db
-narutogokuluffy009 : 7jJNOGVIuT1M40fF
-mongodb+srv://narutogokuluffy009:7jJNOGVIuT1M40fF@obito.mt07zzb.mongodb.net/
-mongodb+srv://narutogokuluffy009:7jJNOGVIuT1M40fF@obito.mt07zzb.mongodb.net/?retryWrites=true&w=majority&appName=obito
+  narutogokuluffy009 : 7jJNOGVIuT1M40fF
+# mongodb+srv://narutogokuluffy009:7jJNOGVIuT1M40fF@obito.mt07zzb.mongodb.net/
+# mongodb+srv://narutogokuluffy009:7jJNOGVIuT1M40fF@obito.mt07zzb.mongodb.net/?retryWrites=true&w=majority&appName=obito
+# db: ai_doc_chat
 
-# {
-#   "GEMINI_API_KEY": "AIzaSyDfwgqvwRczu6LfdhFZAOt1oz3L4Or7LbI",
-#   "PINECONE_API_KEY": "pcsk_4PJQUG_EuzHnqk3WwcRk3sEkMgUdTrFhuivbedi4UChVx2755VHDR1KM1eiUzmmdckpdkr",
-#   "PORT": "5001",
-#   "MONGODB_DB": "ai_doc_chat",
-#   "MONGODB_URI": "mongodb+srv://narutogokuluffy009:7jJNOGVIuT1M40fF@obito.mt07zzb.mongodb.net/?retryWrites=true&w=majority&appName=obito"
-# }
+# pinecone 
+# pcsk_4PJQUG_EuzHnqk3WwcRk3sEkMgUdTrFhuivbedi4UChVx2755VHDR1KM1eiUzmmdckpdkr
+
+
+
 # https://app.pinecone.io/organizations/-OXMovdqDYeBOLj7jwO_/projects/f680aada-63d6-4579-a39b-db4697381226/indexes/ai-doc-chat/browser
 # https://replit.com/@yegex62053/AISearchChat#.env.example
 
 
+GEMINI_API_KEY
+PINECONE_API_KEY
+PORT
+MONGODB_DB
+MONGODB_URI
 
-create user login / registratiopn page 
- logout logic and all create an  home page where all information is shown about  what my service is about with cool abstract css ,  use  any kind of build in templates or themens or icons and all as you wish  and on loading the site for the first time  i want an animation  for about 5 sec  showing an  robot scanning document  in the middle of the screen .
+
+
+
+# {
+#   "GEMINI_API_KEY": "<gemini api key>",
+#   "PINECONE_API_KEY": "<pinecone api key>",
+#   "PORT": "5001",
+#   "MONGODB_DB": "ai_doc_chat",
+#   "MONGODB_URI": "mongodb+srv://<usernme>:<password>@obito.mt07zzb.mongodb.net/?retryWrites=true&w=majority&appName=obito"
+# }
