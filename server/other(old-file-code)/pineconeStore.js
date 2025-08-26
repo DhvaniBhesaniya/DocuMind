@@ -5,19 +5,23 @@ class PineconeVectorStore {
     this.pinecone = null;
     this.index = null;
     this.indexName = "ai-doc-chat";
-    this.dimension = 1024; // make sure this matches your embedding model!
     this.initialized = false;
   }
 
   async initialize() {
     try {
       console.log("Initializing Pinecone connection...");
+
       const apiKey = process.env.PINECONE_API_KEY;
       if (!apiKey) {
         throw new Error("PINECONE_API_KEY not found in environment variables");
       }
 
-      this.pinecone = new Pinecone({ apiKey });
+      this.pinecone = new Pinecone({
+        apiKey: apiKey,
+      });
+
+      // List existing indexes
       const indexes = await this.pinecone.listIndexes();
       console.log(
         "Available indexes:",
@@ -33,7 +37,7 @@ class PineconeVectorStore {
         console.log(`Creating index: ${this.indexName}`);
         await this.pinecone.createIndex({
           name: this.indexName,
-          dimension: this.dimension,
+          dimension: 1024, // llama-test-embed-v2 text embeding model , diemnsion
           metric: "cosine",
           spec: {
             serverless: {
@@ -42,6 +46,7 @@ class PineconeVectorStore {
             },
           },
         });
+
         // Wait for index to be ready
         console.log("Waiting for index to be ready...");
         await this.waitForIndexReady();
@@ -50,6 +55,7 @@ class PineconeVectorStore {
       this.index = this.pinecone.index(this.indexName);
       this.initialized = true;
       console.log("Pinecone initialized successfully");
+
       return true;
     } catch (error) {
       console.error("Failed to initialize Pinecone:", error);
@@ -60,6 +66,7 @@ class PineconeVectorStore {
   async waitForIndexReady() {
     const maxAttempts = 30;
     let attempts = 0;
+
     while (attempts < maxAttempts) {
       try {
         const indexDescription = await this.pinecone.describeIndex(
@@ -80,6 +87,7 @@ class PineconeVectorStore {
         await new Promise((resolve) => setTimeout(resolve, 10000));
       }
     }
+
     throw new Error("Index did not become ready within expected time");
   }
 
@@ -93,6 +101,7 @@ class PineconeVectorStore {
 
     try {
       console.log(`Upserting ${vectors.length} vectors to Pinecone`);
+
       // Ensure each vector contains required metadata fields
       const normalized = vectors.map((v) => {
         const meta = v.metadata || {};
@@ -100,7 +109,9 @@ class PineconeVectorStore {
           id: v.id,
           values: v.values,
           metadata: {
+            // Required for delete/query by name
             documentName: String(meta.documentName || meta.filename || ""),
+            // Helpful extras for debugging/search
             documentId: meta.documentId || null,
             pageNumber:
               typeof meta.pageNumber === "number" ? meta.pageNumber : null,
@@ -113,7 +124,8 @@ class PineconeVectorStore {
           },
         };
       });
-      // Batch upsert
+
+      // Batch upsert (Pinecone supports up to ~100 vectors per batch)
       const batchSize = 100;
       for (let i = 0; i < normalized.length; i += batchSize) {
         const batch = normalized.slice(i, i + batchSize);
@@ -124,6 +136,7 @@ class PineconeVectorStore {
           )}`
         );
       }
+
       console.log("All vectors upserted successfully");
       return true;
     } catch (error) {
@@ -142,16 +155,20 @@ class PineconeVectorStore {
 
     try {
       console.log(`Querying Pinecone for top ${topK} similar vectors`);
+
       const queryRequest = {
         vector: queryVector,
         topK: topK,
         includeMetadata: true,
         includeValues: false,
       };
+
       if (filter) {
         queryRequest.filter = filter;
       }
+
       const queryResponse = await this.index.query(queryRequest);
+
       console.log(`Found ${queryResponse.matches?.length || 0} matches`);
       return queryResponse.matches || [];
     } catch (error) {
@@ -236,22 +253,6 @@ class PineconeVectorStore {
     } catch (error) {
       console.error("Error deleting vectors by document name:", error);
       throw error;
-    }
-  }
-
-  async getStats() {
-    if (!this.initialized) {
-      const success = await this.initialize();
-      if (!success) {
-        return null;
-      }
-    }
-    try {
-      const stats = await this.index.describeIndexStats();
-      return stats;
-    } catch (error) {
-      console.error("Error getting index stats:", error);
-      return null;
     }
   }
 }
