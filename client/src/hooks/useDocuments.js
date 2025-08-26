@@ -1,17 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient.js";
 import { toast } from "@/hooks/use-toast.js";
+import { useAuth } from "@/hooks/useAuth.js";
 
 export function useDocuments() {
+  const { isAuthenticated } = useAuth();
+  
   return useQuery({
     queryKey: ["/api/documents"],
+    // Only enable query when user is authenticated
+    enabled: isAuthenticated,
     // Poll while any document is uploading or processing, stop when all are done/errored
     refetchInterval: (query) => {
+      // Don't poll if user is not authenticated
+      if (!isAuthenticated) return false;
+      
       const docs = query.state.data;
       const shouldPoll = Array.isArray(docs)
         ? docs.some((d) => d?.status === "uploading" || d?.status === "processing")
-        : true; // if no data yet (initial load), poll to fetch first state
-      return shouldPoll ? 1500 : false;
+        : false; // Don't poll if no data yet - let it fetch once and stop
+      return shouldPoll ? 3000 : false;
     },
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,

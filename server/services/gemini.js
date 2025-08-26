@@ -1,121 +1,106 @@
 import { GoogleGenAI } from "@google/genai";
 import { pineconeStore } from "./pineconeStore.js";
 
-let genAI = null;
+let ai = null;
 
 // Initialize function that will be called when needed
 async function initializeGemini() {
-  if (genAI) {
-    return; // Already initialized
+  if (ai) {
+    return ai; // Already initialized
   }
 
-  console.log(
-    "Gemini API Key loaded:",
-    process.env.GEMINI_API_KEY ? "Yes (hidden)" : "No"
-  );
+  console.log("Gemini API Key loaded:", process.env.GEMINI_API_KEY ? "Yes (hidden)" : "No");
 
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
       throw new Error("No Gemini API key found in environment variables");
     }
-    genAI = new GoogleGenAI(apiKey);
+    ai = new GoogleGenAI(apiKey);
     console.log("GoogleGenAI client initialized successfully");
+    console.log("Available methods on ai object:", Object.getOwnPropertyNames(ai));
+    console.log("ai.getGenerativeModel type:", typeof ai.getGenerativeModel);
+    return ai;
   } catch (error) {
     console.error("Failed to initialize GoogleGenAI client:", error);
-    genAI = null;
+    ai = null;
     throw error;
   }
 }
 
 export async function createEmbedding(text) {
   try {
+    // Initialize if not already done
     await initializeGemini();
-    if (!genAI) {
+
+    if (!ai) {
       throw new Error("GoogleGenAI client not initialized");
     }
 
     console.log("Creating embedding for text:", text.substring(0, 100) + "...");
-    const embeddingModel = genAI.getGenerativeModel({
+    const result = await ai.models.embedContent({
       model: "text-embedding-004",
+      contents: [text]
     });
-    const result = await embeddingModel.embedContent(text);
-
-    const embedding = result.embedding;
     console.log("Embedding created successfully");
 
-    // The text-embedding-004 model produces a 768-dimensional vector.
-    // If your Pinecone index requires 1024 dimensions, padding is necessary.
-    const embedding1024 = new Array(1024).fill(0);
-    embedding.values.forEach((value, index) => {
-      embedding1024[index] = value;
-    });
+    // Get the 768-dimensional embedding from Gemini
+    const embedding768 = result.embeddings[0].values;
 
-    console.log(
-      `Padded embedding from ${embedding.values.length} to ${embedding1024.length} dimensions`
-    );
+    // Pad to 1024 dimensions to match Pinecone index
+    const embedding1024 = new Array(1024).fill(0);
+    for (let i = 0; i < Math.min(768, embedding768.length); i++) {
+      embedding1024[i] = embedding768[i];
+    }
+
+    console.log(`Padded embedding from ${embedding768.length} to ${embedding1024.length} dimensions`);
     return embedding1024;
   } catch (error) {
     console.error("Error creating embedding:", error);
+    console.error("Error details:", error.message);
     throw new Error(`Failed to create embedding: ${error.message}`);
   }
 }
 
-export async function generateChatResponse(
-  query,
-  userId,
-  selectedDocumentName = null
-) {
+export async function generateChatResponse(query, userId, selectedDocumentName = null) {
   try {
     await initializeGemini();
-    if (!genAI) {
+
+    if (!ai) {
       throw new Error("GoogleGenAI client not initialized");
     }
 
     // Search for relevant document chunks in Pinecone
     const queryEmbedding = await createEmbedding(query);
 
-    const filter = selectedDocumentName
-      ? { documentName: selectedDocumentName }
-      : undefined;
-    if (filter) {
-      console.log(
-        `Filtering search results to document: ${selectedDocumentName}`
-      );
+    // Create filter for specific document if selected
+    let filter = null;
+    if (selectedDocumentName) {
+      filter = { documentName: selectedDocumentName };
+      console.log(`Filtering search results to document: ${selectedDocumentName}`);
     }
 
-    const searchResults = await pineconeStore.queryVectors(
-      queryEmbedding,
-      5,
-      filter
-    );
+    const searchResults = await pineconeStore.queryVectors(queryEmbedding, 5, filter);
 
     if (!searchResults || searchResults.length === 0) {
       return {
-        content:
-          "I'm sorry, but I don't know the answer. The information is not available in the document.",
-        sources: [],
+        content: "I'm sorry, but I don't know the answer. The information is not available in the document.",
+        sources: []
       };
     }
 
-    const context = searchResults
-      .map((result) => result.metadata.content)
-      .join("\n\n");
-    const sources = searchResults.map((result) => ({
+    // Extract content and metadata from Pinecone results
+    const context = searchResults.map(result => result.metadata.content).join('\n\n');
+    const sources = searchResults.map(result => ({
       documentId: result.metadata.documentId,
-      documentName: result.metadata.documentName || "Unknown Document",
+      documentName: result.metadata.documentName || 'Unknown Document',
       pageNumber: result.metadata.pageNumber || 1,
-      excerpt: result.metadata.content.substring(0, 200) + "...",
+      excerpt: result.metadata.content.substring(0, 200) + "..."
     }));
 
-    const systemInstruction = `You are an AI assistant that helps users understand their documents. 
+    const systemPrompt = `You are an AI assistant that helps users understand their documents. 
     Answer queries ONLY based on the provided context from the documents.
     If the context doesn't contain enough information, respond exactly with: "I'm sorry, but I don't know the answer. The information is not available in the document."`;
-
-    const generativeModel = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      systemInstruction: systemInstruction,
-    });
 
     const userPrompt = `Query: ${query}
 
@@ -124,15 +109,17 @@ ${context}
 
 Please provide a helpful answer based ONLY on the context above.`;
 
-    const result = await generativeModel.generateContent(userPrompt);
-    const response = await result.response;
-    const generatedText =
-      response.text() ||
-      "I apologize, but I couldn't generate a response at this time.";
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: userPrompt,
+      systemInstruction: systemPrompt
+    });
+
+    const generatedText = response.text || "I apologize, but I couldn't generate a response at this time.";
 
     return {
       content: generatedText,
-      sources,
+      sources
     };
   } catch (error) {
     console.error("Error generating chat response:", error);
@@ -142,23 +129,23 @@ Please provide a helpful answer based ONLY on the context above.`;
 
 export async function generateTitle(firstMessage) {
   try {
+    // Initialize if not already done
     await initializeGemini();
-    if (!genAI) {
+
+    if (!ai) {
       return "New Conversation";
     }
 
     const prompt = `Generate a short, descriptive title (3-5 words) for a conversation that starts with this message: "${firstMessage}"
-    
+
     Return only the title, no quotes or additional text.`;
 
-    const generativeModel = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: prompt
     });
-    const result = await generativeModel.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text()?.trim();
 
-    return text || "New Conversation";
+    return response.text?.trim() || "New Conversation";
   } catch (error) {
     console.error("Error generating title:", error);
     return "New Conversation";

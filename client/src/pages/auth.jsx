@@ -1,15 +1,25 @@
-import React, { useState } from "react";
-import { useLogin, useRegister } from "@/hooks/useAuth.js";
+import React, { useState, useEffect } from "react";
+import { useLogin, useRegister, useAuth } from "@/hooks/useAuth.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLocation } from "wouter";
 
 export default function AuthPage() {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
   const login = useLogin();
   const register = useRegister();
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      setLocation("/app");
+    }
+  }, [isAuthenticated, setLocation]);
 
   const onSubmit = (e) => {
     e.preventDefault();

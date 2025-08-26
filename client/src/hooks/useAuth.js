@@ -119,7 +119,14 @@ export function useRegister() {
       const res = await apiRequest("POST", "/api/auth/register", { email, password, name });
       return res.json();
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/auth/me"] }),
+    onSuccess: (data) => {
+      // Store token in localStorage
+      localStorage.setItem("token", data.token);
+      // Update auth state
+      qc.setQueryData(["/api/auth/me"], data.user);
+      // Redirect to dashboard
+      window.location.href = "/app";
+    },
   });
 }
 
@@ -130,7 +137,14 @@ export function useLogin() {
       const res = await apiRequest("POST", "/api/auth/login", { email, password });
       return res.json();
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/auth/me"] }),
+    onSuccess: (data) => {
+      // Store token in localStorage
+      localStorage.setItem("token", data.token);
+      // Update auth state
+      qc.setQueryData(["/api/auth/me"], data.user);
+      // Redirect to dashboard
+      window.location.href = "/app";
+    },
   });
 }
 
