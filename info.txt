@@ -32,7 +32,7 @@ mongodb+srv://narutogokuluffy009:7jJNOGVIuT1M40fF@obito.mt07zzb.mongodb.net/
 mongodb+srv://narutogokuluffy009:7jJNOGVIuT1M40fF@obito.mt07zzb.mongodb.net/?retryWrites=true&w=majority&appName=obito
 
 # {
-#   "GEMINI_API_KEY": "AIzaSyBnTMGEF4hrkGSQux9sb77G-5Te6MSZuRw",
+#   "GEMINI_API_KEY": "AIzaSyDfwgqvwRczu6LfdhFZAOt1oz3L4Or7LbI",
 #   "PINECONE_API_KEY": "pcsk_4PJQUG_EuzHnqk3WwcRk3sEkMgUdTrFhuivbedi4UChVx2755VHDR1KM1eiUzmmdckpdkr",
 #   "PORT": "5001",
 #   "MONGODB_DB": "ai_doc_chat",
