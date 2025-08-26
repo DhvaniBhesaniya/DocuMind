@@ -30,8 +30,8 @@ UPLOAD_DIR=uploads
 
 # mongo db
   narutogokuluffy009 : 7jJNOGVIuT1M40fF
-# mongodb+srv://narutogokuluffy009:7jJNOGVIuT1M40fF@obito.mt07zzb.mongodb.net/
-# mongodb+srv://narutogokuluffy009:7jJNOGVIuT1M40fF@obito.mt07zzb.mongodb.net/?retryWrites=true&w=majority&appName=obito
+# mongodb+srv://<usernme>:<password>@obito.mt07zzb.mongodb.net/
+# mongodb+srv://<usernme>:<password>@obito.mt07zzb.mongodb.net/?retryWrites=true&w=majority&appName=obito
 # db: ai_doc_chat
 
 # pinecone 
@@ -43,6 +43,7 @@ UPLOAD_DIR=uploads
 # https://replit.com/@yegex62053/AISearchChat#.env.example
 
 
+#env 
 GEMINI_API_KEY
 PINECONE_API_KEY
 PORT
