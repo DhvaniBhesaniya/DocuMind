@@ -16,6 +16,12 @@ Chat with your PDFs using advanced RAG (Retrieval-Augmented Generation) technolo
 
 ---
 
+<div align="center">
+  <img src="./documind-hero.png" alt="DocuMind - AI-Powered Document Intelligence" width="100%" />
+</div>
+
+---
+
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
